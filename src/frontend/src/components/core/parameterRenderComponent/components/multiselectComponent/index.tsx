@@ -176,19 +176,21 @@ export default function MultiselectComponent({
                 className="items-center overflow-hidden truncate"
                 data-testid={`${option}-${id ?? ""}-option`}
               >
-                {(customValues.includes(option) || searchValue === option) && (
-                  <span className="text-muted-foreground">
-                    {t("multiselect.textPrefix")}&nbsp;
-                  </span>
-                )}
-                <span className="truncate">{option}</span>
-                <ForwardedIconComponent
-                  name="Check"
-                  className={cn(
-                    "ml-auto h-4 w-4 shrink-0 text-primary",
-                    treatedValue.includes(option) ? "opacity-100" : "opacity-0",
+                <div className="flex w-full items-center gap-1">
+                  {(customValues.includes(option) || searchValue === option) && (
+                    <span className="text-muted-foreground">
+                      {t("multiselect.textPrefix")}&nbsp;
+                    </span>
                   )}
-                />
+                  <span className="truncate">{option}</span>
+                  <ForwardedIconComponent
+                    name="Check"
+                    className={cn(
+                      "ml-auto h-4 w-4 shrink-0 text-primary",
+                      treatedValue.includes(option) ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                </div>
               </CommandItem>
             </div>
           </ShadTooltip>

@@ -38,48 +38,50 @@ const ModelList = ({
   return (
     <CommandList className="max-h-[300px] overflow-y-auto">
       {Object.entries(groupedOptions).map(([provider, models]) => (
-        <CommandGroup className="p-0" key={provider}>
+        <div key={provider}>
           <div className="text-xs font-semibold my-2 ml-4 text-muted-foreground flex items-center justify-between pr-4">
             <div className="flex items-center">{provider}</div>
           </div>
-          {models.map((data) => (
-            <CommandItem
-              key={data.name}
-              value={data.name}
-              onSelect={() => onSelect(data.name)}
-              className="w-full items-center rounded-none"
-              data-testid={`${data.name}-option`}
-            >
-              <div className="flex w-full items-center gap-2">
-                <ForwardedIconComponent
-                  name={data.icon || "Bot"}
-                  className="h-4 w-4 shrink-0 text-primary ml-2"
-                />
-                <div className="truncate text-[13px]">{data.name}</div>
-                {data.metadata?.deprecated ? (
-                  <Badge
-                    variant="secondaryStatic"
-                    size="tag"
-                    data-testid={`${data.name}-deprecated-badge`}
-                  >
-                    Deprecated
-                  </Badge>
-                ) : null}
-                <div className="pl-2 ml-auto">
+          <CommandGroup className="p-0">
+            {models.map((data) => (
+              <CommandItem
+                key={data.name}
+                value={data.name}
+                onSelect={() => onSelect(data.name)}
+                className="w-full items-center rounded-none"
+                data-testid={`${data.name}-option`}
+              >
+                <div className="flex w-full items-center gap-2">
                   <ForwardedIconComponent
-                    name="Check"
-                    className={cn(
-                      "h-4 w-4 shrink-0 text-primary",
-                      selectedModel?.name === data.name
-                        ? "opacity-100"
-                        : "opacity-0",
-                    )}
+                    name={data.icon || "Bot"}
+                    className="h-4 w-4 shrink-0 text-primary ml-2"
                   />
+                  <div className="truncate text-[13px]">{data.name}</div>
+                  {data.metadata?.deprecated ? (
+                    <Badge
+                      variant="secondaryStatic"
+                      size="tag"
+                      data-testid={`${data.name}-deprecated-badge`}
+                    >
+                      Deprecated
+                    </Badge>
+                  ) : null}
+                  <div className="pl-2 ml-auto">
+                    <ForwardedIconComponent
+                      name="Check"
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-primary",
+                        selectedModel?.name === data.name
+                          ? "opacity-100"
+                          : "opacity-0",
+                      )}
+                    />
+                  </div>
                 </div>
-              </div>
-            </CommandItem>
-          ))}
-        </CommandGroup>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </div>
       ))}
     </CommandList>
   );
