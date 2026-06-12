@@ -1,6 +1,7 @@
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 import en from "./locales/en.json";
+import zhHans from "./locales/zh-Hans.json";
 
 const SUPPORTED_LANGUAGES = [
   "en",
@@ -41,7 +42,7 @@ const normalizeLanguage = (lang?: string | null): string => {
 };
 
 export const detectedLang = normalizeLanguage(
-  localStorage.getItem("languagePreference") || "en",
+  localStorage.getItem("languagePreference") || "zh-Hans",
 );
 
 const i18n = i18next.createInstance();
@@ -53,9 +54,10 @@ console.info = () => {};
 i18n.use(initReactI18next).init({
   resources: {
     en: { translation: en },
+    "zh-Hans": { translation: zhHans },
   },
   lng: detectedLang,
-  fallbackLng: "en",
+  fallbackLng: "zh-Hans",
   returnNull: false,
   returnEmptyString: false,
   interpolation: {
@@ -65,13 +67,13 @@ i18n.use(initReactI18next).init({
 console.info = _consoleInfo;
 
 export async function loadLanguage(lang: string): Promise<void> {
-  if (lang === "en") return;
+  if (lang === "en" || lang === "zh-Hans") return;
   if (i18n.hasResourceBundle(lang, "translation")) return;
   try {
     const messages = await import(`./locales/${lang}.json`);
     i18n.addResourceBundle(lang, "translation", messages.default);
-  } catch {
-    // Unknown locale — no bundle file exists. i18next's fallbackLng: "en" takes over.
+  } catch (error) {
+    console.warn(`Failed to load language bundle for "${lang}":`, error);
   }
 }
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #===============================================================================
-# LangFlow 启动脚本
+# LangFlow Build 启动脚本
 # 用途: 检查依赖、安装缺失依赖、构建前端并启动 LangFlow 网页服务
-# 用法: bash start_langflow.sh
+# 用法: bash Build.sh
 #===============================================================================
 
 # ======================== 颜色定义 ========================
@@ -155,23 +155,24 @@ echo ""
 # ======================== 4. 构建前端 ========================
 echo -e "${YELLOW}[4/6] 构建前端...${NC}"
 
-if [ -d "build" ] && [ -f "build/index.html" ]; then
-    echo -e "  构建产物已存在，跳过。"
-    build_success=true
-else
-    build_success=false
-    if [ -f "node_modules/.bin/vite" ]; then
-        ./node_modules/.bin/vite build && build_success=true
-    elif [ -f "node_modules/.bin/vite.cmd" ]; then
-        ./node_modules/.bin/vite.cmd build && build_success=true
-    fi
+# 如果已有构建产物，先删除再重新构建
+if [ -d "build" ]; then
+    echo -e "  清除旧构建产物..."
+    rm -rf build
+fi
 
-    if [ "$build_success" = false ]; then
-        if command -v npx >/dev/null 2>&1; then
-            npx vite build && build_success=true
-        else
-            npm run build && build_success=true
-        fi
+build_success=false
+if [ -f "node_modules/.bin/vite" ]; then
+    ./node_modules/.bin/vite build && build_success=true
+elif [ -f "node_modules/.bin/vite.cmd" ]; then
+    ./node_modules/.bin/vite.cmd build && build_success=true
+fi
+
+if [ "$build_success" = false ]; then
+    if command -v npx >/dev/null 2>&1; then
+        npx vite build && build_success=true
+    else
+        npm run build && build_success=true
     fi
 fi
 
