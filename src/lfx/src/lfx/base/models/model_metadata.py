@@ -354,6 +354,33 @@ MODEL_PROVIDER_METADATA: dict[str, Any] = {
             "model_param": "model",
         },
     },
+    "DeepSeek": {
+        "icon": "DeepSeek",
+        "max_tokens_field_name": "max_tokens",
+        "base_url": "https://api.deepseek.com",
+        "variables": [
+            {
+                "variable_name": "DeepSeek API Key",
+                "variable_key": "DEEPSEEK_API_KEY",
+                "required": True,
+                "is_secret": True,
+                "is_list": False,
+                "options": [],
+                "langchain_param": "api_key",
+                "component_metadata": {
+                    "mapping_field": "api_key",
+                    "required": False,
+                    "advanced": True,
+                    "info": "Falls back to DEEPSEEK_API_KEY environment variable",
+                },
+            }
+        ],
+        "api_docs_url": "https://api-docs.deepseek.com/",
+        "mapping": {
+            "model_class": "ChatOpenAI",
+            "model_param": "model",
+        },
+    },
 }
 
 

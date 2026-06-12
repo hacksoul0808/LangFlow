@@ -122,6 +122,17 @@ def _get_google_generative_ai_inputs_and_fields():
     return google_generative_ai_inputs, create_input_fields_dict(google_generative_ai_inputs, "")
 
 
+def _get_deepseek_inputs_and_fields():
+    try:
+        from lfx.components.deepseek.deepseek import DeepSeekModelComponent
+
+        deepseek_inputs = get_filtered_inputs(DeepSeekModelComponent, provider_name="DeepSeek")
+    except ImportError as e:
+        msg = "DeepSeek is not installed. Please install it with `pip install langchain-openai`."
+        raise ImportError(msg) from e
+    return deepseek_inputs, create_input_fields_dict(deepseek_inputs, "")
+
+
 def _get_openai_inputs_and_fields():
     try:
         from lfx.components.openai.openai_chat_model import OpenAIModelComponent
@@ -347,6 +358,21 @@ try:
         "prefix": "",
         "component_class": ChatOllamaComponent(),
         "icon": ChatOllamaComponent.icon,
+        "is_active": True,
+    }
+except ImportError:
+    pass
+
+try:
+    from lfx.components.deepseek.deepseek import DeepSeekModelComponent
+
+    deepseek_inputs, deepseek_fields = _get_deepseek_inputs_and_fields()
+    MODEL_PROVIDERS_DICT["DeepSeek"] = {
+        "fields": deepseek_fields,
+        "inputs": deepseek_inputs,
+        "prefix": "",
+        "component_class": DeepSeekModelComponent(),
+        "icon": DeepSeekModelComponent.icon,
         "is_active": True,
     }
 except ImportError:

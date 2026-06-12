@@ -87,6 +87,7 @@ const getProviderIcon = (providerName: string): string => {
     "IBM WatsonX": "IBM",
     "IBM watsonx.ai": "IBM",
     OpenRouter: "OpenRouter",
+    DeepSeek: "DeepSeek",
   };
 
   return iconMap[providerName] || "Bot";

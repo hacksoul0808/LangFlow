@@ -90,6 +90,7 @@ _MODEL_FIELDS = {"model", "agent_llm", "embeddings_model", "embedding_model"}
 # langchain-openai with the regular OpenAI provider).
 _PROVIDER_PACKAGE_FALLBACKS: dict[str, set[str]] = {
     "Azure OpenAI": {"langchain-openai"},
+    "DeepSeek": {"langchain-openai"},
 }
 
 

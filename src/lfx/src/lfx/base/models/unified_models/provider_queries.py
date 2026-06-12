@@ -18,6 +18,7 @@ from lfx.base.models.openai_constants import (
     OPENAI_EMBEDDING_MODELS_DETAILED,
     OPENAI_MODELS_DETAILED,
 )
+from lfx.base.models.deepseek_constants import DEEPSEEK_MODELS_DETAILED
 from lfx.base.models.openrouter_constants import OPENROUTER_MODELS_DETAILED
 from lfx.base.models.watsonx_constants import WATSONX_MODELS_DETAILED
 
@@ -33,6 +34,7 @@ model_provider_metadata = get_model_provider_metadata()
 
 _STATIC_MODELS_DETAILED: list[list[dict]] = [
     ANTHROPIC_MODELS_DETAILED,
+    DEEPSEEK_MODELS_DETAILED,
     OPENAI_MODELS_DETAILED,
     OPENAI_EMBEDDING_MODELS_DETAILED,
     GOOGLE_GENERATIVE_AI_MODELS_DETAILED,

@@ -258,6 +258,13 @@ def get_llm(
                 default_headers[header_name] = value
         if default_headers:
             kwargs["default_headers"] = default_headers
+    elif provider == "DeepSeek":
+        # DeepSeek provides an OpenAI-compatible API. Point ChatOpenAI at
+        # the DeepSeek base URL (declared in MODEL_PROVIDER_METADATA).
+        provider_meta = model_provider_metadata.get(provider, {})
+        base_url_value = provider_meta.get("base_url")
+        if base_url_value:
+            kwargs["base_url"] = base_url_value
 
     try:
         return model_class(**kwargs)
