@@ -2,6 +2,12 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ThemeButtons from "@/components/core/appHeaderComponent/components/ThemeButtons";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useGetFlow } from "@/controllers/API/queries/flows/use-get-flow";
 import { useCustomNavigate } from "@/customization/hooks/use-custom-navigate";
 import useFlowStore from "@/stores/flowStore";
@@ -91,8 +97,8 @@ export const SidebarOpenView = ({
 
   return (
     <>
-      <div className="flex flex-col gap-4 px-2">
-        <div className="flex flex-col gap-2">
+      <div className="flex h-full flex-col px-2">
+        <div className="flex flex-col gap-4">
           <Button
             data-testid="new-chat"
             variant="ghost"
@@ -109,127 +115,174 @@ export const SidebarOpenView = ({
           </Button>
         </div>
 
-        {showProjectWorkflows && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 px-2">
-              <IconComponent
-                name="Folder"
-                className="h-[18px] w-[18px] text-ring"
-              />
-              <div className="text-mmd font-normal">项目</div>
-            </div>
-            <div className="flex flex-col gap-1">
-              {flowsByFolder.map(({ folderId, folderName, flows }) => {
-                const expanded =
-                  expandedFolderIds[folderId] ??
-                  (flowsByFolder.length === 1 ? true : false);
-
-                return (
-                  <div key={folderId} className="flex flex-col">
-                    <Button
-                      variant="ghost"
-                      className="h-8 justify-start gap-2 px-2 text-mmd font-normal hover:bg-secondary-hover"
-                      onClick={() => {
-                        setExpandedFolderIds((prev) => ({
-                          ...prev,
-                          [folderId]: !expanded,
-                        }));
-                      }}
-                    >
-                      <IconComponent
-                        name={expanded ? "ChevronDown" : "ChevronRight"}
-                        className="h-4 w-4"
-                      />
-                      <div className="truncate">{folderName}</div>
-                    </Button>
-
-                    {expanded && (
-                      <div className="flex flex-col pl-6">
-                        {flows.map((flow) => (
-                          <Button
-                            key={flow.id}
-                            variant="ghost"
-                            className={cn(
-                              "h-8 justify-start gap-2 px-2 text-mmd font-normal hover:bg-secondary-hover",
-                              flow.id === currentFlowId &&
-                                "bg-secondary-hover font-semibold",
-                            )}
-                            onClick={() => handleSelectFlow(flow.id)}
-                          >
-                            <IconComponent
-                              name={flow.icon ?? "Workflow"}
-                              className="h-4 w-4 text-ring"
-                            />
-                            <div className="truncate">{flow.name}</div>
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-2">
-              <IconComponent
-                name="MessagesSquare"
-                className="h-[18px] w-[18px] text-ring"
-              />
-              <div className="text-mmd font-normal">对话</div>
-            </div>
-          </div>
-
-          {showEmptyChats ? (
-            <div className="px-2 py-1 text-left text-mmd text-muted-foreground">
-              暂无聊天
-            </div>
-          ) : (
-            <div className="flex flex-col">
-              {sessions.map((session, index) => (
-                <SessionSelector
-                  setSelectedView={setSelectedViewField}
-                  selectedView={selectedViewField}
-                  key={index}
-                  session={session}
-                  playgroundPage={playgroundPage}
-                  deleteSession={(session) => {
-                    handleDeleteSession(session);
-                    if (selectedViewField?.id === session) {
-                      setSelectedViewField(undefined);
-                    }
-                  }}
-                  updateVisibleSession={(session) => {
-                    setvisibleSession(session);
-                  }}
-                  toggleVisibility={() => {
-                    setvisibleSession(session);
-                  }}
-                  isVisible={visibleSession === session}
-                  inspectSession={(session) => {
-                    setSelectedViewField({
-                      id: session,
-                      type: "Session",
-                    });
-                  }}
-                  setActiveSession={(session) => {
-                    setActiveSession(session);
-                  }}
-                  menuOpen={openMenuSession === session}
-                  onMenuOpenChange={(open) => {
-                    setOpenMenuSession(open ? session : null);
-                  }}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pt-4 custom-scroll">
+          {showProjectWorkflows && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 px-2">
+                <IconComponent
+                  name="Folder"
+                  className="h-[18px] w-[18px] text-ring"
                 />
-              ))}
+                <div className="text-mmd font-normal">项目</div>
+              </div>
+              <div className="flex flex-col gap-1">
+                {flowsByFolder.map(({ folderId, folderName, flows }) => {
+                  const expanded =
+                    expandedFolderIds[folderId] ??
+                    (flowsByFolder.length === 1 ? true : false);
+
+                  return (
+                    <div key={folderId} className="flex flex-col">
+                      <Button
+                        variant="ghost"
+                        className="h-8 justify-start gap-2 px-2 text-mmd font-normal hover:bg-secondary-hover"
+                        onClick={() => {
+                          setExpandedFolderIds((prev) => ({
+                            ...prev,
+                            [folderId]: !expanded,
+                          }));
+                        }}
+                      >
+                        <IconComponent
+                          name={expanded ? "ChevronDown" : "ChevronRight"}
+                          className="h-4 w-4"
+                        />
+                        <div className="truncate">{folderName}</div>
+                      </Button>
+
+                      {expanded && (
+                        <div className="flex flex-col gap-1 pl-6">
+                          {flows.map((flow) => (
+                            <div
+                              key={flow.id}
+                              className={cn(
+                                "group flex items-center rounded-md hover:bg-secondary-hover",
+                                flow.id === currentFlowId && "bg-secondary-hover",
+                              )}
+                            >
+                              <button
+                                type="button"
+                                className={cn(
+                                  "flex h-8 min-w-0 flex-1 items-center gap-2 px-2 text-left text-mmd font-normal",
+                                  flow.id === currentFlowId && "font-semibold",
+                                )}
+                                onClick={() => handleSelectFlow(flow.id)}
+                              >
+                                <IconComponent
+                                  name={flow.icon ?? "Workflow"}
+                                  className="h-4 w-4 shrink-0 text-ring"
+                                />
+                                <div className="min-w-0 flex-1 truncate">
+                                  {flow.name}
+                                </div>
+                              </button>
+
+                              <button
+                                type="button"
+                                className="invisible mr-0.5 flex h-8 w-8 items-center justify-center rounded-md hover:bg-secondary-hover group-hover:visible"
+                                onClick={() => navigate(`/flow/${flow.id}/`)}
+                              >
+                                <IconComponent
+                                  name="ArrowRight"
+                                  className="h-4 w-4 text-ring"
+                                />
+                              </button>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="invisible mr-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-secondary-hover group-hover:visible"
+                                  >
+                                    <IconComponent
+                                      name="MoreHorizontal"
+                                      className="h-4 w-4 text-ring"
+                                    />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent side="right" align="start">
+                                  <DropdownMenuItem
+                                    onSelect={() => handleSelectFlow(flow.id)}
+                                  >
+                                    在Playground打开
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onSelect={() => navigate(`/flow/${flow.id}/`)}
+                                  >
+                                    打开编辑器
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2">
+                <IconComponent
+                  name="MessagesSquare"
+                  className="h-[18px] w-[18px] text-ring"
+                />
+                <div className="text-mmd font-normal">对话</div>
+              </div>
+            </div>
+
+            {showEmptyChats ? (
+              <div className="px-2 py-1 text-left text-mmd text-muted-foreground">
+                暂无聊天
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {sessions.map((session, index) => (
+                  <SessionSelector
+                    setSelectedView={setSelectedViewField}
+                    selectedView={selectedViewField}
+                    key={index}
+                    session={session}
+                    playgroundPage={playgroundPage}
+                    deleteSession={(session) => {
+                      handleDeleteSession(session);
+                      if (selectedViewField?.id === session) {
+                        setSelectedViewField(undefined);
+                      }
+                    }}
+                    updateVisibleSession={(session) => {
+                      setvisibleSession(session);
+                    }}
+                    toggleVisibility={() => {
+                      setvisibleSession(session);
+                    }}
+                    isVisible={visibleSession === session}
+                    inspectSession={(session) => {
+                      setSelectedViewField({
+                        id: session,
+                        type: "Session",
+                      });
+                    }}
+                    setActiveSession={(session) => {
+                      setActiveSession(session);
+                    }}
+                    menuOpen={openMenuSession === session}
+                    onMenuOpenChange={(open) => {
+                      setOpenMenuSession(open ? session : null);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {showSettingsSection && (
-          <div className="mt-auto flex flex-col gap-2 border-t border-border px-2 pt-4">
+          <div className="flex flex-col gap-2 border-t border-border px-2 py-4">
             <div className="flex items-center gap-2">
               <IconComponent
                 name="Settings"

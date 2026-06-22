@@ -1,39 +1,32 @@
 import { useTranslation } from "react-i18next";
 import ForwardedIconComponent from "@/components/common/genericIconComponent";
-import ShadTooltip from "@/components/common/shadTooltipComponent";
-import { SimpleSidebarTrigger } from "@/components/ui/simple-sidebar";
-
-interface PlaygroundButtonProps {
-  hasIO: boolean;
-}
+import { useCustomNavigate } from "@/customization/hooks/use-custom-navigate";
+import useFlowStore from "@/stores/flowStore";
 
 const ButtonLabel = () => {
   const { t } = useTranslation();
   return <span className="font-normal text-mmd">{t("misc.playground")}</span>;
 };
 
-const DisabledButton = () => (
-  <div
-    className="relative inline-flex h-8 w-auto items-center justify-start gap-1.5 rounded px-2 text-sm font-normal cursor-not-allowed text-muted-foreground"
-    data-testid="playground-btn-flow"
-  >
-    <ForwardedIconComponent name="Play" className="h-4 w-4" />
-    <ButtonLabel />
-  </div>
-);
+const PlaygroundButton = () => {
+  const navigate = useCustomNavigate();
+  const currentFlowId = useFlowStore((state) => state.currentFlow?.id);
 
-const PlaygroundButton = ({ hasIO }: PlaygroundButtonProps) => {
-  const { t } = useTranslation();
-  return hasIO ? (
-    <SimpleSidebarTrigger>
+  return (
+    <button
+      type="button"
+      className="relative inline-flex h-8 w-auto items-center justify-start gap-1.5 rounded bg-muted px-2 text-sm font-normal text-foreground hover:bg-secondary-hover"
+      data-testid="playground-btn-flow"
+      onClick={() => {
+        if (currentFlowId) {
+          window.localStorage.setItem("lf_playground_last_flow_id", currentFlowId);
+        }
+        navigate("/playground");
+      }}
+    >
+      <ForwardedIconComponent name="Play" className="h-4 w-4" />
       <ButtonLabel />
-    </SimpleSidebarTrigger>
-  ) : (
-    <ShadTooltip content={t("misc.addChatInputOutputPlayground")}>
-      <div>
-        <DisabledButton />
-      </div>
-    </ShadTooltip>
+    </button>
   );
 };
 

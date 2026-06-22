@@ -86,15 +86,15 @@ const router = createBrowserRouter(
           >
             <Route path="" element={<AppAuthenticatedPage />}>
               <Route path="" element={<CustomDashboardWrapperPage />}>
+                <Route
+                  index
+                  element={<CustomNavigate replace to={"playground"} />}
+                />
+                <Route
+                  path="playground/"
+                  element={<PlaygroundWorkbenchPage />}
+                />
                 <Route path="" element={<CollectionPage />}>
-                  <Route
-                    index
-                    element={<CustomNavigate replace to={"playground"} />}
-                  />
-                  <Route
-                    path="playground/"
-                    element={<PlaygroundWorkbenchPage />}
-                  />
                   {ENABLE_FILE_MANAGEMENT && (
                     <Route path="assets">
                       <Route
