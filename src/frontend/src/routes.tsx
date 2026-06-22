@@ -31,6 +31,7 @@ import HomePage from "./pages/MainPage/pages/homePage";
 import KnowledgePage from "./pages/MainPage/pages/knowledgePage";
 import SourceChunksPage from "./pages/MainPage/pages/knowledgePage/sourceChunksPage/SourceChunksPage";
 import CollectionPage from "./pages/MainPage/pages/main-page";
+import PlaygroundWorkbenchPage from "./pages/MainPage/pages/playgroundWorkbenchPage";
 import SettingsPage from "./pages/SettingsPage";
 import ApiKeysPage from "./pages/SettingsPage/pages/ApiKeysPage";
 import DBProvidersPage from "./pages/SettingsPage/pages/DBProvidersPage";
@@ -88,7 +89,11 @@ const router = createBrowserRouter(
                 <Route path="" element={<CollectionPage />}>
                   <Route
                     index
-                    element={<CustomNavigate replace to={"flows"} />}
+                    element={<CustomNavigate replace to={"playground"} />}
+                  />
+                  <Route
+                    path="playground/"
+                    element={<PlaygroundWorkbenchPage />}
                   />
                   {ENABLE_FILE_MANAGEMENT && (
                     <Route path="assets">

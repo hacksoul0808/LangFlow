@@ -756,6 +756,9 @@ export type IOModalPropsType = {
   cleanOnClose?: boolean;
   canvasOpen?: boolean;
   playgroundPage?: boolean;
+  showProjectWorkflows?: boolean;
+  showSettingsSection?: boolean;
+  showPublishOptions?: boolean;
 };
 
 export type buttonBoxPropsType = {

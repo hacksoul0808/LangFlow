@@ -31,6 +31,8 @@ import { SelectedViewField } from "./components/selected-view-field";
 import { SidebarOpenView } from "./components/sidebar-open-view";
 import { useGetFlowId } from "./hooks/useGetFlowId";
 
+const LAST_SESSION_BY_FLOW_KEY = "lf_playground_last_session_by_flow";
+
 export default function IOModal({
   children,
   open,
@@ -39,6 +41,9 @@ export default function IOModal({
   isPlayground,
   canvasOpen,
   playgroundPage,
+  showProjectWorkflows,
+  showSettingsSection,
+  showPublishOptions: showPublishOptionsProp,
 }: IOModalPropsType): JSX.Element {
   const { t } = useTranslation();
   const setIOModalOpen = useFlowsManagerStore((state) => state.setIOModalOpen);
@@ -107,8 +112,21 @@ export default function IOModal({
         sessions.unshift(currentFlowId);
       }
       setSessions(sessions);
+      if (
+        showProjectWorkflows &&
+        visibleSession &&
+        !sessions.includes(visibleSession)
+      ) {
+        setvisibleSession(currentFlowId);
+      }
     }
-  }, [sessionsFromDb, sessionsLoading, currentFlowId]);
+  }, [
+    sessionsFromDb,
+    sessionsLoading,
+    currentFlowId,
+    showProjectWorkflows,
+    visibleSession,
+  ]);
 
   useEffect(() => {
     setIOModalOpen(open);
@@ -181,12 +199,52 @@ export default function IOModal({
   >(startView());
 
   const messages = useMessagesStore((state) => state.messages);
+  const clearMessages = useMessagesStore((state) => state.clearMessages);
   const removeMessages = useMessagesStore((state) => state.removeMessages);
   const [sessions, setSessions] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string>(currentFlowId);
   const setCurrentSessionId = useUtilityStore(
     (state) => state.setCurrentSessionId,
   );
+
+  useEffect(() => {
+    if (!showProjectWorkflows) return;
+    clearMessages();
+    setSessions([]);
+    setSelectedViewField(startView());
+
+    const storedRaw = window.localStorage.getItem(LAST_SESSION_BY_FLOW_KEY);
+    if (storedRaw) {
+      try {
+        const stored = JSON.parse(storedRaw) as Record<string, string>;
+        const lastSession = stored[currentFlowId];
+        setvisibleSession(lastSession ?? currentFlowId);
+        return;
+      } catch {
+        window.localStorage.removeItem(LAST_SESSION_BY_FLOW_KEY);
+      }
+    }
+
+    setvisibleSession(currentFlowId);
+  }, [currentFlowId, showProjectWorkflows]);
+
+  useEffect(() => {
+    if (!showProjectWorkflows) return;
+    if (!visibleSession) return;
+
+    const storedRaw = window.localStorage.getItem(LAST_SESSION_BY_FLOW_KEY);
+    let stored: Record<string, string> = {};
+    if (storedRaw) {
+      try {
+        stored = JSON.parse(storedRaw) as Record<string, string>;
+      } catch {
+        stored = {};
+      }
+    }
+
+    stored[currentFlowId] = visibleSession;
+    window.localStorage.setItem(LAST_SESSION_BY_FLOW_KEY, JSON.stringify(stored));
+  }, [visibleSession, currentFlowId, showProjectWorkflows]);
 
   const { isFetched: messagesFetched, refetch: refetchMessages } =
     useGetMessagesQuery(
@@ -302,7 +360,8 @@ export default function IOModal({
     };
   }, []);
 
-  const showPublishOptions = playgroundPage && ENABLE_PUBLISH;
+  const publishOptionsVisible =
+    (showPublishOptionsProp ?? playgroundPage) && ENABLE_PUBLISH;
 
   const LangflowButtonClick = () => {
     track("LangflowButtonClick");
@@ -418,10 +477,12 @@ export default function IOModal({
                     visibleSession={visibleSession}
                     selectedViewField={selectedViewField}
                     playgroundPage={!!playgroundPage}
+                    showProjectWorkflows={!!showProjectWorkflows}
+                    showSettingsSection={!!showSettingsSection}
                     setActiveSession={setActiveSession}
                   />
                 )}
-                {sidebarOpen && showPublishOptions && (
+                {sidebarOpen && publishOptionsVisible && (
                   <div className="absolute bottom-2 left-0 flex w-full flex-col gap-8 border-t border-border px-2 py-4 transition-all">
                     <div className="flex items-center justify-between px-2">
                       <div className="text-sm">{t("modal.io.theme")}</div>
@@ -441,7 +502,7 @@ export default function IOModal({
                 )}
               </div>
             </div>
-            {!sidebarOpen && showPublishOptions && (
+            {!sidebarOpen && publishOptionsVisible && (
               <div className="absolute bottom-6 left-4 hidden transition-all md:block">
                 <ShadTooltip
                   styleClasses="z-50"

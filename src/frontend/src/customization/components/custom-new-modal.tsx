@@ -9,6 +9,9 @@ export function CustomIOModal({
   isPlayground,
   canvasOpen,
   playgroundPage,
+  showProjectWorkflows,
+  showSettingsSection,
+  showPublishOptions,
 }: IOModalPropsType) {
   return (
     <IOModal
@@ -19,6 +22,9 @@ export function CustomIOModal({
       isPlayground={isPlayground}
       canvasOpen={canvasOpen}
       playgroundPage={playgroundPage}
+      showProjectWorkflows={showProjectWorkflows}
+      showSettingsSection={showSettingsSection}
+      showPublishOptions={showPublishOptions}
     />
   );
 }

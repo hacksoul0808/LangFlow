@@ -1,9 +1,16 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import ShadTooltip from "@/components/common/shadTooltipComponent";
+import ThemeButtons from "@/components/core/appHeaderComponent/components/ThemeButtons";
 import { Button } from "@/components/ui/button";
+import { useGetFlow } from "@/controllers/API/queries/flows/use-get-flow";
+import { useCustomNavigate } from "@/customization/hooks/use-custom-navigate";
 import useFlowStore from "@/stores/flowStore";
+import { useFolderStore } from "@/stores/foldersStore";
+import useFlowsManagerStore from "@/stores/flowsManagerStore";
+import { useMessagesStore } from "@/stores/messagesStore";
 import { useVoiceStore } from "@/stores/voiceStore";
+import type { FlowType } from "@/types/flow";
+import { cn } from "@/utils/utils";
 import IconComponent from "../../../components/common/genericIconComponent";
 import type { SidebarOpenViewProps } from "../types/sidebar-open-view";
 import SessionSelector from "./IOFieldView/components/session-selector";
@@ -16,10 +23,20 @@ export const SidebarOpenView = ({
   visibleSession,
   selectedViewField,
   playgroundPage,
+  showProjectWorkflows,
+  showSettingsSection,
   setActiveSession,
 }: SidebarOpenViewProps) => {
   const { t } = useTranslation();
   const [openMenuSession, setOpenMenuSession] = useState<string | null>(null);
+  const navigate = useCustomNavigate();
+  const { mutateAsync: getFlow } = useGetFlow();
+  const setCurrentFlow = useFlowsManagerStore((state) => state.setCurrentFlow);
+  const setIsLoading = useFlowsManagerStore((state) => state.setIsLoading);
+  const currentFlowId = useFlowsManagerStore((state) => state.currentFlowId);
+  const flows = useFlowsManagerStore((state) => state.flows);
+  const folders = useFolderStore((state) => state.folders);
+  const messages = useMessagesStore((state) => state.messages);
 
   const setNewSessionCloseVoiceAssistant = useVoiceStore(
     (state) => state.setNewSessionCloseVoiceAssistant,
@@ -29,77 +46,211 @@ export const SidebarOpenView = ({
     (state) => state.setNewChatOnPlayground,
   );
 
+  const [expandedFolderIds, setExpandedFolderIds] = useState<
+    Record<string, boolean>
+  >({});
+
+  const flowsByFolder = useMemo(() => {
+    const grouped = new Map<string, { name: string; flows: FlowType[] }>();
+    const validFlows = (flows ?? []).filter(
+      (flow) => flow.is_component !== true,
+    );
+
+    for (const flow of validFlows) {
+      const folderId = flow.folder_id ?? "unassigned";
+      const folderName =
+        folders.find((f) => f.id === folderId)?.name ??
+        t("mainPage.myCollection") ??
+        "项目";
+
+      const existing = grouped.get(folderId);
+      if (existing) existing.flows.push(flow);
+      else grouped.set(folderId, { name: folderName, flows: [flow] });
+    }
+
+    return Array.from(grouped.entries()).map(([folderId, value]) => ({
+      folderId,
+      folderName: value.name,
+      flows: value.flows ?? [],
+    }));
+  }, [flows, folders, t]);
+
+  const showEmptyChats = sessions.length <= 1 && messages.length === 0;
+
+  const handleSelectFlow = async (flowId: string) => {
+    if (flowId === currentFlowId) return;
+    setIsLoading(true);
+    try {
+      const flow = await getFlow({ id: flowId });
+      setCurrentFlow(flow);
+      window.localStorage.setItem("lf_playground_last_flow_id", flowId);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
-      <div className="flex flex-col pl-3">
-        <div className="flex flex-col gap-2 pb-2">
-          <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 px-2">
+        <div className="flex flex-col gap-2">
+          <Button
+            data-testid="new-chat"
+            variant="ghost"
+            className="justify-start gap-2 px-2 py-2 hover:bg-secondary-hover"
+            onClick={() => {
+              setvisibleSession(undefined);
+              setSelectedViewField(undefined);
+              setNewSessionCloseVoiceAssistant(true);
+              setNewChatOnPlayground(true);
+            }}
+          >
+            <IconComponent name="Plus" className="h-[18px] w-[18px] text-ring" />
+            <div className="text-mmd font-normal">{t("chat.newChat")}</div>
+          </Button>
+        </div>
+
+        {showProjectWorkflows && (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 px-2">
+              <IconComponent
+                name="Folder"
+                className="h-[18px] w-[18px] text-ring"
+              />
+              <div className="text-mmd font-normal">项目</div>
+            </div>
+            <div className="flex flex-col gap-1">
+              {flowsByFolder.map(({ folderId, folderName, flows }) => {
+                const expanded =
+                  expandedFolderIds[folderId] ??
+                  (flowsByFolder.length === 1 ? true : false);
+
+                return (
+                  <div key={folderId} className="flex flex-col">
+                    <Button
+                      variant="ghost"
+                      className="h-8 justify-start gap-2 px-2 text-mmd font-normal hover:bg-secondary-hover"
+                      onClick={() => {
+                        setExpandedFolderIds((prev) => ({
+                          ...prev,
+                          [folderId]: !expanded,
+                        }));
+                      }}
+                    >
+                      <IconComponent
+                        name={expanded ? "ChevronDown" : "ChevronRight"}
+                        className="h-4 w-4"
+                      />
+                      <div className="truncate">{folderName}</div>
+                    </Button>
+
+                    {expanded && (
+                      <div className="flex flex-col pl-6">
+                        {flows.map((flow) => (
+                          <Button
+                            key={flow.id}
+                            variant="ghost"
+                            className={cn(
+                              "h-8 justify-start gap-2 px-2 text-mmd font-normal hover:bg-secondary-hover",
+                              flow.id === currentFlowId &&
+                                "bg-secondary-hover font-semibold",
+                            )}
+                            onClick={() => handleSelectFlow(flow.id)}
+                          >
+                            <IconComponent
+                              name={flow.icon ?? "Workflow"}
+                              className="h-4 w-4 text-ring"
+                            />
+                            <div className="truncate">{flow.name}</div>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between px-2">
             <div className="flex items-center gap-2">
               <IconComponent
                 name="MessagesSquare"
                 className="h-[18px] w-[18px] text-ring"
               />
-              <div className="text-mmd font-normal">Chat</div>
+              <div className="text-mmd font-normal">对话</div>
             </div>
-            <ShadTooltip styleClasses="z-50" content={t("chat.newChat")}>
-              <div>
-                <Button
-                  data-testid="new-chat"
-                  variant="ghost"
-                  className="flex h-8 w-8 items-center justify-center !p-0 hover:bg-secondary-hover"
-                  onClick={(_) => {
-                    setvisibleSession(undefined);
-                    setSelectedViewField(undefined);
-                    setNewSessionCloseVoiceAssistant(true);
-                    setNewChatOnPlayground(true);
-                  }}
-                >
-                  <IconComponent
-                    name="Plus"
-                    className="h-[18px] w-[18px] text-ring"
-                  />
-                </Button>
-              </div>
-            </ShadTooltip>
           </div>
+
+          {showEmptyChats ? (
+            <div className="px-2 py-1 text-left text-mmd text-muted-foreground">
+              暂无聊天
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {sessions.map((session, index) => (
+                <SessionSelector
+                  setSelectedView={setSelectedViewField}
+                  selectedView={selectedViewField}
+                  key={index}
+                  session={session}
+                  playgroundPage={playgroundPage}
+                  deleteSession={(session) => {
+                    handleDeleteSession(session);
+                    if (selectedViewField?.id === session) {
+                      setSelectedViewField(undefined);
+                    }
+                  }}
+                  updateVisibleSession={(session) => {
+                    setvisibleSession(session);
+                  }}
+                  toggleVisibility={() => {
+                    setvisibleSession(session);
+                  }}
+                  isVisible={visibleSession === session}
+                  inspectSession={(session) => {
+                    setSelectedViewField({
+                      id: session,
+                      type: "Session",
+                    });
+                  }}
+                  setActiveSession={(session) => {
+                    setActiveSession(session);
+                  }}
+                  menuOpen={openMenuSession === session}
+                  onMenuOpenChange={(open) => {
+                    setOpenMenuSession(open ? session : null);
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
-        <div className="flex flex-col">
-          {sessions.map((session, index) => (
-            <SessionSelector
-              setSelectedView={setSelectedViewField}
-              selectedView={selectedViewField}
-              key={index}
-              session={session}
-              playgroundPage={playgroundPage}
-              deleteSession={(session) => {
-                handleDeleteSession(session);
-                if (selectedViewField?.id === session) {
-                  setSelectedViewField(undefined);
-                }
-              }}
-              updateVisibleSession={(session) => {
-                setvisibleSession(session);
-              }}
-              toggleVisibility={() => {
-                setvisibleSession(session);
-              }}
-              isVisible={visibleSession === session}
-              inspectSession={(session) => {
-                setSelectedViewField({
-                  id: session,
-                  type: "Session",
-                });
-              }}
-              setActiveSession={(session) => {
-                setActiveSession(session);
-              }}
-              menuOpen={openMenuSession === session}
-              onMenuOpenChange={(open) => {
-                setOpenMenuSession(open ? session : null);
-              }}
-            />
-          ))}
-        </div>
+
+        {showSettingsSection && (
+          <div className="mt-auto flex flex-col gap-2 border-t border-border px-2 pt-4">
+            <div className="flex items-center gap-2">
+              <IconComponent
+                name="Settings"
+                className="h-[18px] w-[18px] text-ring"
+              />
+              <div className="text-mmd font-normal">设置</div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm">{t("modal.io.theme")}</div>
+              <ThemeButtons />
+            </div>
+            <Button
+              variant="ghost"
+              className="justify-start gap-2 px-2 hover:bg-secondary-hover"
+              onClick={() => navigate("/settings/general")}
+            >
+              <IconComponent name="ExternalLink" className="h-4 w-4 text-ring" />
+              <div className="text-mmd font-normal">打开设置</div>
+            </Button>
+          </div>
+        )}
       </div>
     </>
   );

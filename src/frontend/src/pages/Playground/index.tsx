@@ -102,6 +102,7 @@ export default function PlaygroundPage() {
           setOpen={() => {}}
           isPlayground
           playgroundPage
+          showPublishOptions
         >
           <></>
         </CustomIOModal>
