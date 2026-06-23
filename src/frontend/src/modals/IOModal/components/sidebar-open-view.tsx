@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useGetFlow } from "@/controllers/API/queries/flows/use-get-flow";
@@ -133,22 +134,56 @@ export const SidebarOpenView = ({
 
                   return (
                     <div key={folderId} className="flex flex-col">
-                      <Button
-                        variant="ghost"
-                        className="h-8 justify-start gap-2 px-2 text-mmd font-normal hover:bg-secondary-hover"
-                        onClick={() => {
-                          setExpandedFolderIds((prev) => ({
-                            ...prev,
-                            [folderId]: !expanded,
-                          }));
-                        }}
-                      >
-                        <IconComponent
-                          name={expanded ? "ChevronDown" : "ChevronRight"}
-                          className="h-4 w-4"
-                        />
-                        <div className="truncate">{folderName}</div>
-                      </Button>
+                      <div className="group flex items-center rounded-md hover:bg-secondary-hover">
+                        <button
+                          type="button"
+                          className="flex h-8 min-w-0 flex-1 items-center gap-2 px-2 text-left text-mmd font-normal"
+                          onClick={() => {
+                            setExpandedFolderIds((prev) => ({
+                              ...prev,
+                              [folderId]: !expanded,
+                            }));
+                          }}
+                        >
+                          <IconComponent
+                            name={expanded ? "ChevronDown" : "ChevronRight"}
+                            className="h-4 w-4 shrink-0"
+                          />
+                          <div className="min-w-0 flex-1 truncate">
+                            {folderName}
+                          </div>
+                        </button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="mr-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-secondary-hover"
+                            >
+                              <IconComponent
+                                name="ChevronDown"
+                                className="h-4 w-4 text-ring"
+                              />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent side="right" align="start">
+                            <DropdownMenuItem
+                              onSelect={() => navigate(`/all/folder/${folderId}`)}
+                            >
+                              打开项目
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {flows.map((flow) => (
+                              <DropdownMenuItem
+                                key={flow.id}
+                                onSelect={() => navigate(`/flow/${flow.id}/`)}
+                              >
+                                打开 {flow.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
 
                       {expanded && (
                         <div className="flex flex-col gap-1 pl-6">
@@ -192,10 +227,10 @@ export const SidebarOpenView = ({
                                 <DropdownMenuTrigger asChild>
                                   <button
                                     type="button"
-                                    className="invisible mr-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-secondary-hover group-hover:visible"
+                                    className="mr-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-secondary-hover"
                                   >
                                     <IconComponent
-                                      name="MoreHorizontal"
+                                      name="ChevronDown"
                                       className="h-4 w-4 text-ring"
                                     />
                                   </button>

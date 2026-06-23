@@ -57,6 +57,9 @@ export default function PlaygroundPage() {
   useEffect(() => {
     if (id) track("Playground Page Loaded", { flowId: id });
     setPlaygroundPage(true);
+    return () => {
+      setPlaygroundPage(false);
+    };
   }, []);
 
   useEffect(() => {

@@ -74,7 +74,10 @@ export const useGetMessagesQuery: useQueryFunctionType<
     // For authenticated playground, sync API results into the Zustand store
     // so ChatView (which reads from useMessagesStore) can display them.
     // Replace all messages for this flow to keep store in sync with DB.
-    if (isAuthenticatedPlayground() && Array.isArray(data.data)) {
+    if (
+      (!useFlowStore.getState().playgroundPage || isAuthenticatedPlayground()) &&
+      Array.isArray(data.data)
+    ) {
       const store = useMessagesStore.getState();
       const flowId = id;
       // Keep messages from other flows, replace messages for this flow

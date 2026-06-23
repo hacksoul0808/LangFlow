@@ -3,12 +3,14 @@ import AlertDisplayArea from "@/alerts/displayArea";
 import { useGetRefreshFlowsQuery } from "@/controllers/API/queries/flows/use-get-refresh-flows-query";
 import { useGetFlow } from "@/controllers/API/queries/flows/use-get-flow";
 import { CustomIOModal } from "@/customization/components/custom-new-modal";
+import useFlowStore from "@/stores/flowStore";
 import useFlowsManagerStore from "@/stores/flowsManagerStore";
 
 const LAST_FLOW_ID_KEY = "lf_playground_last_flow_id";
 
 export const PlaygroundWorkbenchPage = () => {
   const { mutateAsync: getFlow } = useGetFlow();
+  const setPlaygroundPage = useFlowStore((state) => state.setPlaygroundPage);
   const setCurrentFlow = useFlowsManagerStore((state) => state.setCurrentFlow);
   const setIsLoading = useFlowsManagerStore((state) => state.setIsLoading);
   const flows = useFlowsManagerStore((state) => state.flows);
@@ -20,6 +22,10 @@ export const PlaygroundWorkbenchPage = () => {
     { get_all: true, header_flows: true },
     { enabled: true },
   );
+
+  useEffect(() => {
+    setPlaygroundPage(false);
+  }, [setPlaygroundPage]);
 
   const candidateFlowIds = useMemo(() => {
     if (!flows) return [];
@@ -58,7 +64,14 @@ export const PlaygroundWorkbenchPage = () => {
     };
 
     load();
-  }, [defaultFlowId, currentFlowId, currentFlow?.data, getFlow, setCurrentFlow, setIsLoading]);
+  }, [
+    defaultFlowId,
+    currentFlowId,
+    currentFlow?.data,
+    getFlow,
+    setCurrentFlow,
+    setIsLoading,
+  ]);
 
   useEffect(() => {
     document.title = currentFlow?.name || "Langflow";
@@ -74,7 +87,6 @@ export const PlaygroundWorkbenchPage = () => {
           open={true}
           setOpen={() => {}}
           isPlayground
-          playgroundPage
           showProjectWorkflows
           showSettingsSection
           showPublishOptions={false}

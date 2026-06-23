@@ -199,7 +199,6 @@ export default function IOModal({
   >(startView());
 
   const messages = useMessagesStore((state) => state.messages);
-  const clearMessages = useMessagesStore((state) => state.clearMessages);
   const removeMessages = useMessagesStore((state) => state.removeMessages);
   const [sessions, setSessions] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string>(currentFlowId);
@@ -209,9 +208,21 @@ export default function IOModal({
 
   useEffect(() => {
     if (!showProjectWorkflows) return;
-    clearMessages();
     setSessions([]);
     setSelectedViewField(startView());
+
+    if (useFlowStore.getState().playgroundPage && !isAuthenticatedPlayground()) {
+      const stored = JSON.parse(
+        window.sessionStorage.getItem(currentFlowId) || "[]",
+      );
+      if (Array.isArray(stored)) {
+        const store = useMessagesStore.getState();
+        const otherFlowMessages = store.messages.filter(
+          (m) => m.flow_id !== currentFlowId,
+        );
+        store.setMessages([...otherFlowMessages, ...stored]);
+      }
+    }
 
     const storedRaw = window.localStorage.getItem(LAST_SESSION_BY_FLOW_KEY);
     if (storedRaw) {
@@ -290,8 +301,16 @@ export default function IOModal({
   );
 
   useEffect(() => {
-    if (playgroundPage && !isAuthenticatedPlayground() && messages.length > 0) {
-      window.sessionStorage.setItem(currentFlowId, JSON.stringify(messages));
+    if (playgroundPage && !isAuthenticatedPlayground()) {
+      const flowMessages = messages.filter((message) => {
+        return message.flow_id === currentFlowId;
+      });
+      if (flowMessages.length > 0) {
+        window.sessionStorage.setItem(
+          currentFlowId,
+          JSON.stringify(flowMessages),
+        );
+      }
     }
     if (newChatOnPlayground && !sessionsLoading) {
       const handleRefetchAndSetSession = async () => {
@@ -310,7 +329,7 @@ export default function IOModal({
       handleRefetchAndSetSession();
       setNewChatOnPlayground(false);
     }
-  }, [messages, playgroundPage]);
+  }, [messages, playgroundPage, currentFlowId]);
 
   useEffect(() => {
     if (!visibleSession) {
