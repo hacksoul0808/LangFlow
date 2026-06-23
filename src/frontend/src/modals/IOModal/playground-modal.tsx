@@ -1,9 +1,10 @@
 //import LangflowLogoColor from "@/assets/LangflowLogocolor.svg?react";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import ThemeButtons from "@/components/core/appHeaderComponent/components/ThemeButtons";
+import { NEW_SESSION_NAME } from "@/constants/constants";
 import { useGetMessagesQuery } from "@/controllers/API/queries/messages";
 import { useDeleteSession } from "@/controllers/API/queries/messages/use-delete-sessions";
 import { useGetSessionsFromFlowQuery } from "@/controllers/API/queries/messages/use-get-sessions-from-flow";
@@ -91,12 +92,14 @@ export default function IOModal({
   const [visibleSession, setvisibleSession] = useState<string | undefined>(
     currentFlowId,
   );
+  const [localSessions, setLocalSessions] = useState<string[]>([]);
+  const [deletedSessions, setDeletedSessions] = useState<string[]>([]);
   const PlaygroundTitle = playgroundPage && flowName ? flowName : "Playground";
 
   const {
     data: sessionsFromDb,
     isLoading: sessionsLoading,
-    refetch: refetchSessions,
+    isFetching: sessionsFetching,
   } = useGetSessionsFromFlowQuery(
     {
       id: currentFlowId,
@@ -104,29 +107,52 @@ export default function IOModal({
     { enabled: open },
   );
 
-  useEffect(() => {
-    if (sessionsFromDb && !sessionsLoading) {
-      const sessions = [...sessionsFromDb.sessions];
-      // Always include the currentFlowId as the default session if it's not already present
-      if (!sessions.includes(currentFlowId)) {
-        sessions.unshift(currentFlowId);
-      }
-      setSessions(sessions);
-      if (
-        showProjectWorkflows &&
-        visibleSession &&
-        !sessions.includes(visibleSession)
-      ) {
-        setvisibleSession(currentFlowId);
-      }
+  const sessions = useMemo(() => {
+    const dbSessions = sessionsFromDb?.sessions
+      ? [...sessionsFromDb.sessions]
+      : [];
+    if (!dbSessions.includes(currentFlowId)) {
+      dbSessions.unshift(currentFlowId);
     }
-  }, [
-    sessionsFromDb,
-    sessionsLoading,
-    currentFlowId,
-    showProjectWorkflows,
-    visibleSession,
-  ]);
+
+    const localOnlySessions = localSessions.filter(
+      (sessionId) => !dbSessions.includes(sessionId),
+    );
+
+    return [...dbSessions, ...localOnlySessions].filter(
+      (sessionId) => !deletedSessions.includes(sessionId),
+    );
+  }, [sessionsFromDb?.sessions, currentFlowId, localSessions, deletedSessions]);
+
+  const areStringArraysEqual = (a: string[], b: string[]) => {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (!sessionsFromDb || sessionsLoading) return;
+    const dbSessions = [...sessionsFromDb.sessions];
+    if (!dbSessions.includes(currentFlowId)) {
+      dbSessions.unshift(currentFlowId);
+    }
+
+    setLocalSessions((prev) => {
+      const next = prev.filter((sessionId) => !dbSessions.includes(sessionId));
+      return areStringArraysEqual(prev, next) ? prev : next;
+    });
+  }, [sessionsFromDb, sessionsLoading, currentFlowId]);
+
+  useEffect(() => {
+    if (!showProjectWorkflows) return;
+    if (!visibleSession) return;
+    if (!sessions.includes(visibleSession)) {
+      setvisibleSession(currentFlowId);
+    }
+  }, [showProjectWorkflows, visibleSession, sessions, currentFlowId]);
 
   useEffect(() => {
     setIOModalOpen(open);
@@ -137,6 +163,12 @@ export default function IOModal({
 
   function handleDeleteSession(session_id: string) {
     // Update UI optimistically
+    if (session_id !== currentFlowId) {
+      setLocalSessions((prev) => prev.filter((s) => s !== session_id));
+      setDeletedSessions((prev) =>
+        prev.includes(session_id) ? prev : [...prev, session_id],
+      );
+    }
     if (visibleSession === session_id) {
       const remainingSessions = sessions.filter((s) => s !== session_id);
       if (remainingSessions.length > 0) {
@@ -200,11 +232,29 @@ export default function IOModal({
 
   const messages = useMessagesStore((state) => state.messages);
   const removeMessages = useMessagesStore((state) => state.removeMessages);
-  const [sessions, setSessions] = useState<string[]>([]);
   const [sessionId, setSessionId] = useState<string>(currentFlowId);
   const setCurrentSessionId = useUtilityStore(
     (state) => state.setCurrentSessionId,
   );
+
+  const createLocalSession = useCallback(() => {
+    const newSessionPattern = new RegExp(`^${NEW_SESSION_NAME} (\\d+)$`);
+    const existingNumbers = sessions
+      .map((s) => {
+        const match = s.match(newSessionPattern);
+        return match ? parseInt(match[1], 10) : -1;
+      })
+      .filter((n) => n >= 0);
+    const nextNumber =
+      existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 0;
+    const newId = `${NEW_SESSION_NAME} ${nextNumber}`;
+
+    setLocalSessions((prev) => (prev.includes(newId) ? prev : [...prev, newId]));
+    setDeletedSessions((prev) => prev.filter((s) => s !== newId));
+    setvisibleSession(newId);
+
+    return newId;
+  }, [sessions]);
 
   useEffect(() => {
     if (!showProjectWorkflows) return;
@@ -311,21 +361,8 @@ export default function IOModal({
         );
       }
     }
-    if (newChatOnPlayground && !sessionsLoading) {
-      const handleRefetchAndSetSession = async () => {
-        try {
-          const result = await refetchSessions();
-          if (result.data?.sessions && result.data.sessions.length > 0) {
-            setvisibleSession(
-              result.data.sessions[result.data.sessions.length - 1],
-            );
-          }
-        } catch (error) {
-          console.error("Error refetching sessions:", error);
-        }
-      };
-
-      handleRefetchAndSetSession();
+    if (newChatOnPlayground && !sessionsLoading && !sessionsFetching) {
+      createLocalSession();
       setNewChatOnPlayground(false);
     }
   }, [
@@ -334,8 +371,9 @@ export default function IOModal({
     currentFlowId,
     newChatOnPlayground,
     sessionsLoading,
-    refetchSessions,
+    sessionsFetching,
     setNewChatOnPlayground,
+    createLocalSession,
   ]);
 
   useEffect(() => {
