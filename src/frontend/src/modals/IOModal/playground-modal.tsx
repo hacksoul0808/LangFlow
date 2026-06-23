@@ -208,7 +208,6 @@ export default function IOModal({
 
   useEffect(() => {
     if (!showProjectWorkflows) return;
-    setSessions([]);
     setSelectedViewField(startView());
 
     if (useFlowStore.getState().playgroundPage && !isAuthenticatedPlayground()) {
@@ -329,7 +328,15 @@ export default function IOModal({
       handleRefetchAndSetSession();
       setNewChatOnPlayground(false);
     }
-  }, [messages, playgroundPage, currentFlowId]);
+  }, [
+    messages,
+    playgroundPage,
+    currentFlowId,
+    newChatOnPlayground,
+    sessionsLoading,
+    refetchSessions,
+    setNewChatOnPlayground,
+  ]);
 
   useEffect(() => {
     if (!visibleSession) {

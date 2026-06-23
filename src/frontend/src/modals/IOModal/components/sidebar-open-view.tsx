@@ -43,7 +43,6 @@ export const SidebarOpenView = ({
   const currentFlowId = useFlowsManagerStore((state) => state.currentFlowId);
   const flows = useFlowsManagerStore((state) => state.flows);
   const folders = useFolderStore((state) => state.folders);
-  const messages = useMessagesStore((state) => state.messages);
 
   const setNewSessionCloseVoiceAssistant = useVoiceStore(
     (state) => state.setNewSessionCloseVoiceAssistant,
@@ -65,6 +64,7 @@ export const SidebarOpenView = ({
 
     for (const flow of validFlows) {
       const folderId = flow.folder_id ?? "unassigned";
+      if (folderId === "unassigned") continue;
       const folderName =
         folders.find((f) => f.id === folderId)?.name ??
         t("mainPage.myCollection") ??
@@ -82,7 +82,7 @@ export const SidebarOpenView = ({
     }));
   }, [flows, folders, t]);
 
-  const showEmptyChats = sessions.length <= 1 && messages.length === 0;
+  const displaySessions = sessions.length > 0 ? sessions : [currentFlowId];
 
   const handleSelectFlow = async (flowId: string) => {
     if (flowId === currentFlowId) return;
@@ -94,6 +94,16 @@ export const SidebarOpenView = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleNewChatForFlow = async (flowId: string) => {
+    if (flowId !== currentFlowId) {
+      await handleSelectFlow(flowId);
+    }
+    setvisibleSession(undefined);
+    setSelectedViewField(undefined);
+    setNewSessionCloseVoiceAssistant(true);
+    setNewChatOnPlayground(true);
   };
 
   return (
@@ -158,7 +168,7 @@ export const SidebarOpenView = ({
                           <DropdownMenuTrigger asChild>
                             <button
                               type="button"
-                              className="mr-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-secondary-hover"
+                              className="invisible mr-1 flex h-8 w-8 items-center justify-center rounded-md hover:bg-secondary-hover group-hover:visible"
                             >
                               <IconComponent
                                 name="ChevronDown"
@@ -237,14 +247,14 @@ export const SidebarOpenView = ({
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent side="right" align="start">
                                   <DropdownMenuItem
-                                    onSelect={() => handleSelectFlow(flow.id)}
+                                    onSelect={() => handleNewChatForFlow(flow.id)}
                                   >
-                                    在Playground打开
+                                    新对话
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onSelect={() => navigate(`/flow/${flow.id}/`)}
                                   >
-                                    打开编辑器
+                                    编辑工作流
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -270,49 +280,43 @@ export const SidebarOpenView = ({
               </div>
             </div>
 
-            {showEmptyChats ? (
-              <div className="px-2 py-1 text-left text-mmd text-muted-foreground">
-                暂无聊天
-              </div>
-            ) : (
-              <div className="flex flex-col">
-                {sessions.map((session, index) => (
-                  <SessionSelector
-                    setSelectedView={setSelectedViewField}
-                    selectedView={selectedViewField}
-                    key={index}
-                    session={session}
-                    playgroundPage={playgroundPage}
-                    deleteSession={(session) => {
-                      handleDeleteSession(session);
-                      if (selectedViewField?.id === session) {
-                        setSelectedViewField(undefined);
-                      }
-                    }}
-                    updateVisibleSession={(session) => {
-                      setvisibleSession(session);
-                    }}
-                    toggleVisibility={() => {
-                      setvisibleSession(session);
-                    }}
-                    isVisible={visibleSession === session}
-                    inspectSession={(session) => {
-                      setSelectedViewField({
-                        id: session,
-                        type: "Session",
-                      });
-                    }}
-                    setActiveSession={(session) => {
-                      setActiveSession(session);
-                    }}
-                    menuOpen={openMenuSession === session}
-                    onMenuOpenChange={(open) => {
-                      setOpenMenuSession(open ? session : null);
-                    }}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="flex flex-col">
+              {displaySessions.map((session, index) => (
+                <SessionSelector
+                  setSelectedView={setSelectedViewField}
+                  selectedView={selectedViewField}
+                  key={index}
+                  session={session}
+                  playgroundPage={playgroundPage}
+                  deleteSession={(session) => {
+                    handleDeleteSession(session);
+                    if (selectedViewField?.id === session) {
+                      setSelectedViewField(undefined);
+                    }
+                  }}
+                  updateVisibleSession={(session) => {
+                    setvisibleSession(session);
+                  }}
+                  toggleVisibility={() => {
+                    setvisibleSession(session);
+                  }}
+                  isVisible={visibleSession === session}
+                  inspectSession={(session) => {
+                    setSelectedViewField({
+                      id: session,
+                      type: "Session",
+                    });
+                  }}
+                  setActiveSession={(session) => {
+                    setActiveSession(session);
+                  }}
+                  menuOpen={openMenuSession === session}
+                  onMenuOpenChange={(open) => {
+                    setOpenMenuSession(open ? session : null);
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
