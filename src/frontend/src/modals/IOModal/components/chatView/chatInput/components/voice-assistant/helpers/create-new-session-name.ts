@@ -1,5 +1,6 @@
-export const createNewSessionName = () => {
-  return `Session ${new Date().toLocaleString("en-US", {
+export const createNewSessionName = (flowName?: string) => {
+  const prefix = flowName ? `${flowName} ` : "Session ";
+  return `${prefix}${new Date().toLocaleString("en-US", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",

@@ -233,9 +233,11 @@ function ApiInterceptor() {
   function checkErrorCount(): boolean {
     if (isLoginPage) return false;
 
-    setAuthenticationErrorCount(authenticationErrorCount + 1);
+    const currentCount = useAuthStore.getState().authenticationErrorCount;
+    const newCount = currentCount + 1;
+    setAuthenticationErrorCount(newCount);
 
-    if (authenticationErrorCount > 3) {
+    if (newCount > 3) {
       setAuthenticationErrorCount(0);
       mutationLogout();
       return false;
