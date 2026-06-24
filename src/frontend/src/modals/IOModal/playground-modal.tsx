@@ -91,6 +91,9 @@ export default function IOModal({
   const [visibleSession, setvisibleSession] = useState<string | undefined>(
     currentFlowId,
   );
+  const isNewChatPendingRef = useRef(false);
+  const visibleSessionRef = useRef(visibleSession);
+  visibleSessionRef.current = visibleSession;
   const PlaygroundTitle = playgroundPage && flowName ? flowName : "Playground";
   const {
     data: sessionsFromDb,
@@ -112,18 +115,19 @@ export default function IOModal({
       setSessions(sessions);
       if (
         showProjectWorkflows &&
-        visibleSession &&
-        !sessions.includes(visibleSession)
+        visibleSessionRef.current &&
+        !sessions.includes(visibleSessionRef.current) &&
+        !isNewChatPendingRef.current
       ) {
         setvisibleSession(currentFlowId);
       }
+      isNewChatPendingRef.current = false;
     }
   }, [
     sessionsFromDb,
     sessionsLoading,
     currentFlowId,
     showProjectWorkflows,
-    visibleSession,
   ]);
 
   useEffect(() => {
@@ -292,7 +296,9 @@ export default function IOModal({
       window.sessionStorage.setItem(currentFlowId, JSON.stringify(messages));
     }
     if (newChatOnPlayground && !sessionsLoading) {
+      isNewChatPendingRef.current = true;
       const newSessionId = createNewSessionName(flowName);
+      setSessions((prev) => (prev.includes(newSessionId) ? prev : [newSessionId, ...prev]));
       setvisibleSession(newSessionId);
       setNewChatOnPlayground(false);
     }
